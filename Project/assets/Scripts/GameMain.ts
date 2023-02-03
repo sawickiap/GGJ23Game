@@ -3,6 +3,7 @@ import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec
 import { NodeScript } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
+import { WaterScript } from './WaterScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -14,6 +15,7 @@ export class GameMain extends Component {
     @property(Prefab) NodeLPrefab: Prefab;
     @property(Prefab) LinkLPrefab: Prefab;
     @property(Prefab) FlowerLPrefab: Prefab;
+    @property(Prefab) WaterRootPrefab: Prefab;
 
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
@@ -67,10 +69,13 @@ export class GameMain extends Component {
             for(let nearbyNode of nearbyNodes)
                 this.CreateLink(nearbyNode, newNode);
             
-            let isCloseToSurface = this.node.getChildByName('Ground').
-                getComponent(GroundScript).IsCloseToSurface(e.getUILocation());
+            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
             if(isCloseToSurface)
                 this.CreateFlower(newNode);
+            
+            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+            if(isCloseToWater)
+                this.CreateWaterRoot(newNode);
         }
     }
 
@@ -135,5 +140,17 @@ export class GameMain extends Component {
         flowerNode.getComponent(UITransform).setContentSize(newContentSize);
 
         this.node.getChildByName('LinksParent').addChild(flowerNode);
+    }
+
+    private CreateWaterRoot(nodeA: Node): void
+    {
+        let rootNode = instantiate(this.WaterRootPrefab);
+
+        let linkScript = rootNode.getComponent(LinkScript);
+        linkScript.NodeA = nodeA;
+
+        rootNode.setPosition(nodeA.getPosition());
+
+        this.node.getChildByName('LinksParent').addChild(rootNode);
     }
 }

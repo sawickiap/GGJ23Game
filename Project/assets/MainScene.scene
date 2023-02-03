@@ -1021,8 +1021,8 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 444.432,
-      "y": 144.748,
+      "x": 451.241,
+      "y": 107.3,
       "z": 0
     },
     "_lrot": {
@@ -1182,8 +1182,8 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": -457.8,
-      "y": 104.536,
+      "x": -454.396,
+      "y": 109.643,
       "z": 0
     }
   },
@@ -1302,6 +1302,10 @@
     },
     "FlowerLPrefab": {
       "__uuid__": "ad5af912-edf6-4f0a-9b95-838c6864c823",
+      "__expectedType__": "cc.Prefab"
+    },
+    "WaterRootPrefab": {
+      "__uuid__": "ff30533c-ac12-4982-a96f-28f4f73a143d",
       "__expectedType__": "cc.Prefab"
     },
     "_id": "5dej51m4dMkYcyd07QSsy4"

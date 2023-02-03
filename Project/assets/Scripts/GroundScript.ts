@@ -19,19 +19,19 @@ export class GroundScript extends Component {
     OnMouseDown(e: EventMouse): void
     {
         let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
-        if(this.ContainsGround(colliders))
+        if(GroundScript.ContainsGround(colliders))
             this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
         //e.propagationStopped = true; // Not needed.
     }
 
-    IsCloseToSurface(uiLocation: Vec2): boolean
+    public static IsCloseToSurface(uiLocation: Vec2): boolean
     {
         let locationAbove = v2(uiLocation.x, uiLocation.y + NODE_MAX_DIST_TO_SURFACE_FOR_FLOWER);
         let colliders = PhysicsSystem2D.instance.testPoint(locationAbove);
         return !this.ContainsGround(colliders);
     }
 
-    private ContainsGround(colliders: readonly Collider2D[]): boolean
+    private static ContainsGround(colliders: readonly Collider2D[]): boolean
     {
         for(let collider of colliders)
             if(collider.group == PHYSICS_GROUP_GROUND)

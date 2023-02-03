@@ -5,6 +5,7 @@ const { ccclass, property } = _decorator;
 export class LinkScript extends Component {
     @property IsLeft: boolean = false;
     @property IsFlower: boolean = false;
+    @property IsWaterRoot: boolean = false;
     @property NodeA: Node = null;
     @property NodeB: Node = null;
 

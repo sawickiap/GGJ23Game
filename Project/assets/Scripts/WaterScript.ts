@@ -1,9 +1,10 @@
 import { _decorator, Component, Node, EventMouse, PhysicsSystem,
-     PhysicsSystem2D, PolygonCollider2D } from 'cc';
+     PhysicsSystem2D, PolygonCollider2D, Vec2, Collider2D, v2 } from 'cc';
 import { GameMain } from './GameMain';
 const { ccclass, property } = _decorator;
 
 const PHYSICS_GROUP_WATER = 1 << 6;
+const NODE_MAX_DIST_TO_WATER_FOR_WATER_ROOT = 24;
 
 @ccclass('WaterScript')
 export class WaterScript extends Component {
@@ -33,6 +34,21 @@ export class WaterScript extends Component {
         else
             this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
         //e.propagationStopped = true; // Not needed.
+    }
+
+    static IsCloseToWater(uiLocation: Vec2): boolean
+    {
+        let locationAbove = v2(uiLocation.x, uiLocation.y - NODE_MAX_DIST_TO_WATER_FOR_WATER_ROOT);
+        let colliders = PhysicsSystem2D.instance.testPoint(locationAbove);
+        return this.ContainsWater(colliders);
+    }
+
+    private static ContainsWater(colliders: readonly Collider2D[]): boolean
+    {
+        for(let collider of colliders)
+            if(collider.group == PHYSICS_GROUP_WATER)
+                return true;
+        return false;
     }
 }
 
