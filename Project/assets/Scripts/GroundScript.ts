@@ -1,6 +1,8 @@
-import { _decorator, Component, Node, EventMouse } from 'cc';
+import { _decorator, Component, Node, EventMouse, PhysicsSystem2D } from 'cc';
 import { GameMain } from './GameMain';
 const { ccclass, property } = _decorator;
+
+const PHYSICS_GROUP_GROUND = 1 << 1;
 
 @ccclass('GroundScript')
 export class GroundScript extends Component {
@@ -15,8 +17,19 @@ export class GroundScript extends Component {
 
     OnMouseDown(e: EventMouse): void
     {
-        //console.log('GroundScript OnMouseDown');
-        this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
+        let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
+        let groundFound = false;
+        for(let collider of colliders)
+        {
+            if(collider.group == PHYSICS_GROUP_GROUND)
+            {
+                groundFound = true;
+                break;
+            }
+        }
+        if(groundFound)
+            this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
+        //e.propagationStopped = true; // Not needed.
     }
 }
 
