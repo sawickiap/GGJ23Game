@@ -1,7 +1,7 @@
 [
   {
     "__type__": "cc.Prefab",
-    "_name": "Node L",
+    "_name": "Link L",
     "_objFlags": 0,
     "_native": "",
     "data": {
@@ -12,7 +12,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Node L",
+    "_name": "Link L",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": null,
@@ -24,18 +24,15 @@
       },
       {
         "__id__": 4
-      },
-      {
-        "__id__": 6
       }
     ],
     "_prefab": {
-      "__id__": 8
+      "__id__": 6
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -423.421,
-      "y": 143.399,
+      "x": -264,
+      "y": -62.00000000000006,
       "z": 0
     },
     "_lrot": {
@@ -74,7 +71,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 24,
+      "width": 72,
       "height": 24
     },
     "_anchorPoint": {
@@ -86,7 +83,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d1apAsjPZAhoYYDwSo8RxR"
+    "fileId": "c5YkcVVI5B+YJmos0SjrHY"
   },
   {
     "__type__": "cc.Sprite",
@@ -110,10 +107,10 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "2af88c6d-2b96-4fc4-b03e-b64d149a0ae7@f9941",
+      "__uuid__": "fec3d944-c91e-4866-b9da-4ab28b8d9a48@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
-    "_type": 0,
+    "_type": 2,
     "_fillType": 0,
     "_sizeMode": 2,
     "_fillCenter": {
@@ -130,25 +127,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "66E4LaG/FCyJW4rvpUJFKh"
-  },
-  {
-    "__type__": "394a164AcFK5rFJ71qu9p6T",
-    "_name": "",
-    "_objFlags": 0,
-    "node": {
-      "__id__": 1
-    },
-    "_enabled": true,
-    "__prefab": {
-      "__id__": 7
-    },
-    "IsLeftTeam": true,
-    "_id": ""
-  },
-  {
-    "__type__": "cc.CompPrefabInfo",
-    "fileId": "7eRTZcr5JEn4NOoXKHiDGG"
+    "fileId": "49tlmrd6lIvoIEC4EBu3Fo"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -158,7 +137,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "0cEWZy/LBCLJWCLjHO/lva",
+    "fileId": "3bw8O70hRP5bnWjf8/ROL5",
     "instance": null,
     "targetOverrides": null
   }

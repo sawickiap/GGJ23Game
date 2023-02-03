@@ -46,5 +46,15 @@
       "6": 127
     }
   },
-  "custom_joint_texture_layouts": []
+  "custom_joint_texture_layouts": [],
+  "layer": [
+    {
+      "name": "Link",
+      "value": 16384
+    },
+    {
+      "name": "Node",
+      "value": 65536
+    }
+  ]
 }
