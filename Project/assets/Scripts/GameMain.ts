@@ -1,34 +1,73 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
     Canvas, UITransform, Size, Quat, quat } from 'cc';
+import { NodeScript } from './NodeScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
+const NODE_DIST_MIN = 24;
+const NODE_DIST_MAX = 128;
 
 @ccclass('GameMain')
 export class GameMain extends Component {
     @property(Prefab) NodeLPrefab: Prefab;
     @property(Prefab) LinkLPrefab: Prefab;
 
-    #previousNode: Node = null;
+    #leftNodes: Node[] = [];
+    #rightNodes: Node[] = [];
 
     start() {
-        console.log('Hello World!');
+        //console.log('Hello World!');
+        this.GatherExistingNodes();
     }
 
     update(deltaTime: number) {
         
     }
 
+    private GatherExistingNodes(): void
+    {
+        for(let childNode of this.node.children)
+        {
+            let nodeScript = childNode.getComponent(NodeScript);
+            if(nodeScript)
+            {
+                if(nodeScript.IsLeftTeam)
+                    this.#leftNodes.push(childNode);
+                else
+                    this.#rightNodes.push(childNode);
+            }
+        }
+    }
+
     OnGroundMouseDown(e: EventMouse): void
     {
         console.log('GameMain OnGroundMouseDown');
+
+        let pos = this.MouseLocationToNodePosition(e.getUILocation());
+
+        let closestNodeDist = Number.MAX_VALUE;
+        for(let node of this.#leftNodes)
+        {
+            let dist = Vec3.distance(pos, node.getPosition());
+            if(dist < closestNodeDist)
+                closestNodeDist = dist;
+        }
+        if(closestNodeDist >= NODE_DIST_MIN &&
+            closestNodeDist <= NODE_DIST_MAX)
+        {
+            this.CreateNode(pos);
+        }
+    }
+
+    CreateNode(pos: Vec3): void
+    {
         let newNode = instantiate(this.NodeLPrefab);
         //newNode.setPosition(this.MouseLocationToNodePosition(e.getLocation())); 
-        newNode.setPosition(this.MouseLocationToNodePosition(e.getUILocation())); 
+        newNode.setPosition(pos); 
         this.node.addChild(newNode);
-        if(this.#previousNode)
-            this.CreateLink(this.#previousNode, newNode);
-        this.#previousNode = newNode;
+        if(this.#leftNodes.length > 0)
+            this.CreateLink(this.#leftNodes[this.#leftNodes.length - 1], newNode);
+        this.#leftNodes.push(newNode);
     }
 
     private MouseLocationToNodePosition(v: Vec2): Vec3
