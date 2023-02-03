@@ -8,6 +8,41 @@
   "physics": {
     "gravity": {
       "y": 0
+    },
+    "collisionGroups": [
+      {
+        "index": 1,
+        "name": "Ground"
+      },
+      {
+        "index": 2,
+        "name": "Player L node"
+      },
+      {
+        "index": 3,
+        "name": "Player L connection"
+      },
+      {
+        "index": 4,
+        "name": "Player R node"
+      },
+      {
+        "index": 5,
+        "name": "Player R connection"
+      },
+      {
+        "index": 6,
+        "name": "Water"
+      }
+    ],
+    "collisionMatrix": {
+      "0": 127,
+      "1": 127,
+      "2": 127,
+      "3": 127,
+      "4": 127,
+      "5": 127,
+      "6": 127
     }
   },
   "custom_joint_texture_layouts": []
