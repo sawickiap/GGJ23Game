@@ -13,8 +13,11 @@ const NODE_DIST_MAX = 96;
 @ccclass('GameMain')
 export class GameMain extends Component {
     @property(Prefab) NodeLPrefab: Prefab;
+    @property(Prefab) NodeRPrefab: Prefab;
     @property(Prefab) LinkLPrefab: Prefab;
+    @property(Prefab) LinkRPrefab: Prefab;
     @property(Prefab) FlowerLPrefab: Prefab;
+    @property(Prefab) FlowerRPrefab: Prefab;
     @property(Prefab) WaterRootPrefab: Prefab;
 
     #leftNodes: Node[] = [];
@@ -49,10 +52,11 @@ export class GameMain extends Component {
         console.log('GameMain OnGroundMouseDown');
 
         let pos = this.MouseLocationToNodePosition(e.getUILocation());
+        let isLeft = e.getButton() == 0;
 
         let tooClose = false;
         let nearbyNodes: Node[] = [];
-        for(let node of this.#leftNodes)
+        for(let node of (isLeft ? this.#leftNodes : this.#rightNodes))
         {
             let dist = Vec3.distance(pos, node.getPosition());
             if(dist < NODE_DIST_MIN)
@@ -63,29 +67,35 @@ export class GameMain extends Component {
             else if(dist <= NODE_DIST_MAX)
                 nearbyNodes.push(node);
         }
+        //console.log(`tooClose=${tooClose}, nearbyNodes=${nearbyNodes}`);
         if(!tooClose && nearbyNodes.length > 0)
         {
-            let newNode = this.CreateNode(pos);
+            let newNode = this.CreateNode(isLeft, pos);
+
             for(let nearbyNode of nearbyNodes)
-                this.CreateLink(nearbyNode, newNode);
+                this.CreateLink(nearbyNode, newNode, isLeft);
             
             let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
             if(isCloseToSurface)
-                this.CreateFlower(newNode);
+                this.CreateFlower(newNode, isLeft);
             
             let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
             if(isCloseToWater)
-                this.CreateWaterRoot(newNode);
+                this.CreateWaterRoot(newNode, isLeft);
         }
     }
 
-    CreateNode(pos: Vec3): Node
+    private CreateNode(isLeft: boolean, pos: Vec3): Node
     {
-        let newNode = instantiate(this.NodeLPrefab);
+        let newNode = instantiate(isLeft ? this.NodeLPrefab : this.NodeRPrefab);
         //newNode.setPosition(this.MouseLocationToNodePosition(e.getLocation())); 
+        newNode.getComponent(NodeScript).IsLeftTeam = isLeft;
         newNode.setPosition(pos); 
-        this.node.addChild(newNode);    
-        this.#leftNodes.push(newNode);
+        this.node.addChild(newNode);
+        if(isLeft)
+            this.#leftNodes.push(newNode);
+        else
+            this.#rightNodes.push(newNode);
         return newNode;
     }
 
@@ -96,9 +106,9 @@ export class GameMain extends Component {
             v.y - contentSize.height / 2);
     }
 
-    private CreateLink(nodeA: Node, nodeB: Node): void
+    private CreateLink(nodeA: Node, nodeB: Node, isLeft: boolean): void
     {
-        let linkNode = instantiate(this.LinkLPrefab);
+        let linkNode = instantiate(isLeft ? this.LinkLPrefab : this.LinkRPrefab);
 
         let linkScript = linkNode.getComponent(LinkScript);
         linkScript.NodeA = nodeA;
@@ -124,9 +134,9 @@ export class GameMain extends Component {
         this.node.getChildByName('LinksParent').addChild(linkNode);
     }
 
-    private CreateFlower(nodeA: Node): void
+    private CreateFlower(nodeA: Node, isLeft: boolean): void
     {
-        let flowerNode = instantiate(this.FlowerLPrefab);
+        let flowerNode = instantiate(isLeft ? this.FlowerLPrefab : this.FlowerRPrefab);
 
         let linkScript = flowerNode.getComponent(LinkScript);
         linkScript.NodeA = nodeA;
@@ -142,12 +152,13 @@ export class GameMain extends Component {
         this.node.getChildByName('LinksParent').addChild(flowerNode);
     }
 
-    private CreateWaterRoot(nodeA: Node): void
+    private CreateWaterRoot(nodeA: Node, isLeft: boolean): void
     {
         let rootNode = instantiate(this.WaterRootPrefab);
 
         let linkScript = rootNode.getComponent(LinkScript);
         linkScript.NodeA = nodeA;
+        linkScript.IsLeft = isLeft;
 
         rootNode.setPosition(nodeA.getPosition());
 
