@@ -2,6 +2,7 @@ import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec
     Canvas, UITransform, Size, Quat, quat } from 'cc';
 import { NodeScript } from './NodeScript';
 import { LinkScript } from './LinkScript';
+import { GroundScript } from './GroundScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -12,6 +13,7 @@ const NODE_DIST_MAX = 96;
 export class GameMain extends Component {
     @property(Prefab) NodeLPrefab: Prefab;
     @property(Prefab) LinkLPrefab: Prefab;
+    @property(Prefab) FlowerLPrefab: Prefab;
 
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
@@ -64,6 +66,11 @@ export class GameMain extends Component {
             let newNode = this.CreateNode(pos);
             for(let nearbyNode of nearbyNodes)
                 this.CreateLink(nearbyNode, newNode);
+            
+            let isCloseToSurface = this.node.getChildByName('Ground').
+                getComponent(GroundScript).IsCloseToSurface(e.getUILocation());
+            if(isCloseToSurface)
+                this.CreateFlower(newNode);
         }
     }
 
@@ -110,5 +117,23 @@ export class GameMain extends Component {
         linkNode.setRotation(rotation);
 
         this.node.getChildByName('LinksParent').addChild(linkNode);
+    }
+
+    private CreateFlower(nodeA: Node): void
+    {
+        let flowerNode = instantiate(this.FlowerLPrefab);
+
+        let linkScript = flowerNode.getComponent(LinkScript);
+        linkScript.NodeA = nodeA;
+
+        flowerNode.setPosition(nodeA.getPosition());
+
+        let oldContentSize = flowerNode.getComponent(UITransform).contentSize;
+        let newContentSize = new Size(
+            oldContentSize.width,
+            oldContentSize.height + Math.random() * 64 - 32);
+        flowerNode.getComponent(UITransform).setContentSize(newContentSize);
+
+        this.node.getChildByName('LinksParent').addChild(flowerNode);
     }
 }

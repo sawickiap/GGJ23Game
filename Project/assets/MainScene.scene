@@ -1182,8 +1182,8 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": -439.863,
-      "y": 150.873,
+      "x": -457.8,
+      "y": 104.536,
       "z": 0
     }
   },
@@ -1298,6 +1298,10 @@
     },
     "LinkLPrefab": {
       "__uuid__": "f19c0a09-48f3-4219-8008-244c5f4da2d5",
+      "__expectedType__": "cc.Prefab"
+    },
+    "FlowerLPrefab": {
+      "__uuid__": "ad5af912-edf6-4f0a-9b95-838c6864c823",
       "__expectedType__": "cc.Prefab"
     },
     "_id": "5dej51m4dMkYcyd07QSsy4"
