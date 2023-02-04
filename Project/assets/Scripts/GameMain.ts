@@ -557,7 +557,20 @@ export class GameMain extends Component {
         transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
 
         let vis = instantiate(this.TransferVisPrefab);
-        vis.setPosition(srcNode.getPosition());
+
+        let posA = srcNode.getPosition();
+        let posB = dstNode.getPosition();
+        let vecAB = v3(); Vec3.subtract(vecAB, posB, posA);
+
+        let midPos = v3(); Vec3.add(midPos, posA, posB);
+        Vec3.divide(midPos, midPos, v3(2, 2, 2));
+        vis.setPosition(midPos);
+
+        let angle = Math.atan2(vecAB.y, vecAB.x) * RAD_TO_DEG;
+        let rotation = quat();
+        Quat.fromAngleZ(rotation, angle);
+        vis.setRotation(rotation);
+
         let visScript = vis.getComponent(TransferVisScript);
         assert(visScript);
         visScript.Init(
@@ -644,7 +657,7 @@ export class GameMain extends Component {
         let oldContentSize = flowerNode.getComponent(UITransform).contentSize;
         let newContentSize = new Size(
             oldContentSize.width,
-            oldContentSize.height + Math.random() * 64 - 32);
+            oldContentSize.height + Math.random() * 150);
         flowerNode.getComponent(UITransform).setContentSize(newContentSize);
 
         this.#linksLayerNode.addChild(flowerNode);
