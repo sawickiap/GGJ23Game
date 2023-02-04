@@ -15,6 +15,7 @@ const POISON_TRANSFER_PER_SECOND = 10;
 
 const SUN_GATHER_PER_SECOND = 10;
 const WATER_GATHER_PER_SECOND = 10;
+const POISON_PRODUCTION_PER_SECOND_MAX = 5;
 
 export class Transfer
 {
@@ -72,6 +73,23 @@ export class NodeScript extends Component {
             this.Water = Math.min(this.Water + WATER_GATHER_PER_SECOND * dt, NODE_WATER_MAX);
             needsUpdateLooks = true;
         }
+
+        // Produce poison. The more we have, the faster we produce.
+        let poisonProductionRate = Math.min(
+            this.Sun / NODE_SUN_MAX, this.Water / NODE_WATER_MAX);
+        poisonProductionRate = poisonProductionRate > 0.5 ?
+            (poisonProductionRate - 0.5) * 2 : 0;
+        let poisonAmount = POISON_PRODUCTION_PER_SECOND_MAX * dt * poisonProductionRate;
+        poisonAmount = Math.min(poisonAmount, this.Sun, this.Water,
+            NODE_POISON_MAX - this.Poison);
+        if(poisonAmount > 0)
+        {
+            this.Poison += poisonAmount;
+            this.Sun -= poisonAmount;
+            this.Water -= poisonAmount;
+            needsUpdateLooks = true;
+        }
+
         return needsUpdateLooks;
     }
 
