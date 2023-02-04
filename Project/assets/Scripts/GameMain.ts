@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
-    Canvas, UITransform, Size, Quat, quat } from 'cc';
+    Canvas, UITransform, Size, Quat, quat, assert } from 'cc';
 import { NodeScript } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
@@ -22,9 +22,16 @@ export class GameMain extends Component {
 
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
+    #linksLayerNode: Node = null;
+    #nodesLayerNode: Node = null;
 
     start() {
         //console.log('Hello World!');
+        this.#linksLayerNode = this.node.getChildByName('LinksLayer');
+        assert(this.#linksLayerNode);
+        this.#nodesLayerNode = this.node.getChildByName('NodesLayer');
+        assert(this.#nodesLayerNode);
+
         this.GatherExistingNodes();
     }
 
@@ -34,16 +41,14 @@ export class GameMain extends Component {
 
     private GatherExistingNodes(): void
     {
-        for(let childNode of this.node.children)
+        for(let childNode of this.#nodesLayerNode.children)
         {
             let nodeScript = childNode.getComponent(NodeScript);
-            if(nodeScript)
-            {
-                if(nodeScript.IsLeftTeam)
-                    this.#leftNodes.push(childNode);
-                else
-                    this.#rightNodes.push(childNode);
-            }
+            assert(nodeScript);
+            if(nodeScript.IsLeftTeam)
+                this.#leftNodes.push(childNode);
+            else
+                this.#rightNodes.push(childNode);
         }
     }
 
@@ -91,7 +96,7 @@ export class GameMain extends Component {
         //newNode.setPosition(this.MouseLocationToNodePosition(e.getLocation())); 
         newNode.getComponent(NodeScript).IsLeftTeam = isLeft;
         newNode.setPosition(pos); 
-        this.node.addChild(newNode);
+        this.#nodesLayerNode.addChild(newNode);
         if(isLeft)
             this.#leftNodes.push(newNode);
         else
@@ -131,7 +136,7 @@ export class GameMain extends Component {
         Quat.fromAngleZ(rotation, angle);
         linkNode.setRotation(rotation);
 
-        this.node.getChildByName('LinksParent').addChild(linkNode);
+        this.#linksLayerNode.addChild(linkNode);
     }
 
     private CreateFlower(nodeA: Node, isLeft: boolean): void
@@ -149,7 +154,7 @@ export class GameMain extends Component {
             oldContentSize.height + Math.random() * 64 - 32);
         flowerNode.getComponent(UITransform).setContentSize(newContentSize);
 
-        this.node.getChildByName('LinksParent').addChild(flowerNode);
+        this.#linksLayerNode.addChild(flowerNode);
     }
 
     private CreateWaterRoot(nodeA: Node, isLeft: boolean): void
@@ -162,6 +167,6 @@ export class GameMain extends Component {
 
         rootNode.setPosition(nodeA.getPosition());
 
-        this.node.getChildByName('LinksParent').addChild(rootNode);
+        this.#linksLayerNode.addChild(rootNode);
     }
 }

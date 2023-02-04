@@ -21,7 +21,6 @@ export class GroundScript extends Component {
         let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
         if(GroundScript.ContainsGround(colliders))
             this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
-        //e.propagationStopped = true; // Not needed.
     }
 
     public static IsCloseToSurface(uiLocation: Vec2): boolean
