@@ -40,6 +40,6 @@ export class SoundManagerScript extends Component {
         this.#audioSource.playOneShot(this.Destroy, 1);
     }
     PlaySelect(): void {
-        this.#audioSource.playOneShot(this.Select, 1);
+        this.#audioSource.playOneShot(this.Select, 0.6);
     }
 }
