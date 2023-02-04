@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
-    Canvas, UITransform, Size, Quat, quat, assert, Sprite } from 'cc';
+    Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro } from 'cc';
 import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
@@ -9,6 +9,7 @@ const { ccclass, property } = _decorator;
 const RAD_TO_DEG = 180 / Math.PI;
 const NODE_DIST_MIN = 48;
 const NODE_DIST_MAX = 96;
+const LOGIC_UPDATE_INTERVAL = 0.2; // in seconds
 
 @ccclass('GameMain')
 export class GameMain extends Component {
@@ -51,6 +52,8 @@ export class GameMain extends Component {
 
         this.GatherExistingNodes();
         this.SelectNode(null);
+
+        this.schedule(() => this.UpdateLogic(), LOGIC_UPDATE_INTERVAL, macro.REPEAT_FOREVER);
     }
 
     private MustGetChildByName(parentNode: Node, childName: string): Node
@@ -62,6 +65,13 @@ export class GameMain extends Component {
 
     update(deltaTime: number) {
         
+    }
+
+    private UpdateLogic(): void
+    {
+        for(let node of this.#leftNodes)
+            node.getComponent(NodeScript).UpdateLogic(LOGIC_UPDATE_INTERVAL);
+        this.UpdateUiResources();
     }
 
     private GatherExistingNodes(): void
@@ -100,16 +110,17 @@ export class GameMain extends Component {
         //console.log(`tooClose=${tooClose}, nearbyNodes=${nearbyNodes}`);
         if(!tooClose && nearbyNodes.length > 0)
         {
-            let newNode = this.CreateNode(isLeft, pos);
+            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
+            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+
+            let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
 
             for(let nearbyNode of nearbyNodes)
                 this.CreateLink(nearbyNode, newNode, isLeft);
             
-            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
             if(isCloseToSurface)
                 this.CreateFlower(newNode, isLeft);
             
-            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
             if(isCloseToWater)
                 this.CreateWaterRoot(newNode, isLeft);
         }
@@ -125,13 +136,6 @@ export class GameMain extends Component {
 
             this.#selectionActiveNode.setPosition(nodeToSelect.getPosition());
             this.#selectionActiveNode.active = true;
-            
-            this.#uiBarSunNode.getComponent(Sprite).fillRange =
-                nodeScript.Sun / NODE_SUN_MAX;
-            this.#uiBarWaterNode.getComponent(Sprite).fillRange =
-                nodeScript.Water / NODE_WATER_MAX;
-            this.#uiBarPoisonNode.getComponent(Sprite).fillRange =
-                nodeScript.Poison / NODE_POISON_MAX;
             this.#uiNode.active = true;
         }
         else
@@ -140,6 +144,22 @@ export class GameMain extends Component {
             this.#uiNode.active = false;
         }
         this.#selectedNode = nodeToSelect;
+        this.UpdateUiResources();
+    }
+
+    UpdateUiResources(): void
+    {
+        if(this.#selectedNode)
+        {
+            let nodeScript = this.#selectedNode.getComponent(NodeScript);
+            assert(nodeScript);
+            this.#uiBarSunNode.getComponent(Sprite).fillRange =
+                nodeScript.Sun / NODE_SUN_MAX;
+            this.#uiBarWaterNode.getComponent(Sprite).fillRange =
+                nodeScript.Water / NODE_WATER_MAX;
+            this.#uiBarPoisonNode.getComponent(Sprite).fillRange =
+                nodeScript.Poison / NODE_POISON_MAX;
+        }
     }
 
     DestroyNode(nodeToDestroy: Node): void
@@ -175,11 +195,14 @@ export class GameMain extends Component {
         nodeToDestroy.destroy();
     }
 
-    private CreateNode(isLeft: boolean, pos: Vec3): Node
+    private CreateNode(isLeft: boolean, pos: Vec3,
+        hasFlower: boolean, hasWaterRoot: boolean): Node
     {
         let newNode = instantiate(isLeft ? this.NodeLPrefab : this.NodeRPrefab);
-        //newNode.setPosition(this.MouseLocationToNodePosition(e.getLocation())); 
-        newNode.getComponent(NodeScript).IsLeftTeam = isLeft;
+        let nodeScript = newNode.getComponent(NodeScript);
+        nodeScript.IsLeftTeam = isLeft;
+        nodeScript.HasFlower = hasFlower;
+        nodeScript.HasWaterRoot = hasWaterRoot;
         newNode.setPosition(pos); 
         this.#nodesLayerNode.addChild(newNode);
         if(isLeft)

@@ -6,12 +6,18 @@ export const NODE_SUN_MAX = 100;
 export const NODE_WATER_MAX = 100;
 export const NODE_POISON_MAX = 100;
 
+const SUN_GATHER_PER_SECOND = 1;
+const WATER_GATHER_PER_SECOND = 1;
+
 @ccclass('NodeScript')
 export class NodeScript extends Component {
     @property IsLeftTeam: boolean = false;
     @property Sun: number = 50;
     @property Water: number = 50;
     @property Poison: number = 50;
+
+    HasFlower: boolean = false;
+    HasWaterRoot: boolean = false;
 
     #gameMain: GameMain = null;
 
@@ -27,7 +33,14 @@ export class NodeScript extends Component {
     }
 
     update(deltaTime: number) {
-        
+    }
+
+    UpdateLogic(dt: number): void
+    {
+        if(this.HasFlower)
+            this.Sun = Math.min(this.Sun + SUN_GATHER_PER_SECOND * dt, NODE_SUN_MAX);
+        if(this.HasWaterRoot)
+            this.Water = Math.min(this.Water + WATER_GATHER_PER_SECOND * dt, NODE_WATER_MAX);
     }
 
     OnMouseDown(e: EventMouse): void
