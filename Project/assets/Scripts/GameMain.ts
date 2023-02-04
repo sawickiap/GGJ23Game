@@ -80,6 +80,8 @@ export class GameMain extends Component {
         else
             this.AiStepNormal();
 
+        this.AiStepTransfer();
+
         /*
         let nodesWithSun: Node[] = [];
         let nodesWithWater: Node[] = [];
@@ -105,7 +107,8 @@ export class GameMain extends Component {
 
     private AiStepBeginUp(): void
     {
-        console.log('AI step begin up');
+        //console.log('AI step begin up');
+
         let existingPos = this.#rightNodes[0].getPosition();
         let angle = 150;
         let newPos = v3(
@@ -117,14 +120,83 @@ export class GameMain extends Component {
 
     private AiStepBeginDown(): void
     {
-        console.log('AI step begin down');
+        //console.log('AI step begin down');
         
+        let rightNodeCount = this.#rightNodes.length;
+        let srcNode = rightNodeCount == 2 ?
+            this.#rightNodes[0] : this.#rightNodes[rightNodeCount - 1];
+        let existingPos = srcNode.getPosition();
+        let angle = 250;
+        let newPos = v3(
+            existingPos.x + Math.cos(angle * DEG_TO_RAD) * NODE_DIST_MAX * 0.95,
+            existingPos.y + Math.sin(angle * DEG_TO_RAD) * NODE_DIST_MAX * 0.95, 0);
+        this.ActionPlaceNode(newPos, this.NodePositionToMouseLocation(newPos),
+            false);
     }
 
     private AiStepNormal(): void
     {
-        console.log('AI step normal');
+        //console.log('AI step normal');
         
+    }
+
+    private AiStepTransfer(): void
+    {
+        let transferSrcNodes = this.#rightNodes.slice();
+        //transferSrcNodes.reverse(); // TEMP TEST
+        transferSrcNodes.sort((lhs, rhs) =>
+            this.AiNodeTransferSrcHigherPriority(lhs, rhs));
+        //console.log(`AI sorted nodes, first has sun=${transferSrcNodes[0].getComponent(NodeScript).Sun}`);
+        // TODO pick random with decreasing priority not always first one
+        let srcIndex = 0;
+        let srcNode = transferSrcNodes[srcIndex];
+
+        let dstNode = this.AiFindTransferDstNode(srcNode);
+        if(dstNode)
+        {
+            //console.log(`AiStepTransfer found dstNode`);
+            this.ActionStartTransfer(srcNode, dstNode);
+        }
+        else
+            ;//console.log(`AiStepTransfer didn't find dstNode`);
+    }
+
+    // If not found, returns null.
+    private AiFindTransferDstNode(srcNode: Node): Node
+    {
+        let srcPos = srcNode.getPosition();
+        let dstNodes: Node[] = [];
+        for(let node of this.#rightNodes)
+        {
+            if(node != srcNode &&
+                Vec3.squaredDistance(node.getPosition(), srcPos) <=
+                NODE_DIST_MAX * NODE_DIST_MAX)
+            {
+                //console.log(`FOUND POTENTIAL DST NODE`);
+                dstNodes.push(node);
+            }
+        }
+        // TODO don't transfer to full or almost full
+        // TODO sort, prioritize
+        if(dstNodes.length == 0)
+            return null;
+        let dstNode = dstNodes[Math.floor(Math.random() * dstNodes.length)];
+        //console.log(`AiFindTransferDstNode returning dstNode=${dstNode}`);
+        return dstNode;
+    }
+
+    private AiNodeTransferSrcHigherPriority(lhs: Node, rhs: Node): number
+    {
+        return this.AiNodeTransferSrcPriority(rhs) -
+            this.AiNodeTransferSrcPriority(lhs);
+    }
+
+    private AiNodeTransferSrcPriority(n: Node): number
+    {
+        let nodeScript = n.getComponent(NodeScript);
+        assert(nodeScript);
+        // TODO include position
+        return nodeScript.Sun + nodeScript.Water + nodeScript.Poison;
     }
 
     /*
@@ -234,7 +306,7 @@ export class GameMain extends Component {
 
     OnGroundMouseDown(e: EventMouse): void
     {
-        console.log('GameMain OnGroundMouseDown');
+        //console.log('GameMain OnGroundMouseDown');
 
         let pos = this.MouseLocationToNodePosition(e.getUILocation());
         let isLeft = e.getButton() == 0;
@@ -258,7 +330,7 @@ export class GameMain extends Component {
             if(nearbyTotalSun >= NEW_NODE_SUN_COST &&
                 nearbyTotalWater >= NEW_NODE_WATER_COST)
             {
-                console.log('Enough sun or water in nearby nodes - creating new node.');
+                //console.log('Enough sun or water in nearby nodes - creating new node.');
                 GameMain.RemoveNewNodeCost(nearbyNodes);
 
                 let isCloseToSurface = GroundScript.IsCloseToSurface(uiPos);
@@ -283,7 +355,7 @@ export class GameMain extends Component {
                     this.#soundManager.PlayNewNode();
             }
             else
-                console.log('Not enough sun or water in nearby nodes to create new node.');
+                ;//console.log('Not enough sun or water in nearby nodes to create new node.');
         }
     }
 
@@ -304,7 +376,7 @@ export class GameMain extends Component {
             nodeScript.Water -= waterToRemove;
             waterToRemoveLeft -= waterToRemove;
 
-            console.log(`RemoveNewNodeCost from node ${nodeScript.node.uuid} sun=${sunToRemove}, water=${waterToRemove}`);
+            //console.log(`RemoveNewNodeCost from node ${nodeScript.node.uuid} sun=${sunToRemove}, water=${waterToRemove}`);
 
             nodeScript.UpdateLooks();
 
@@ -402,20 +474,24 @@ export class GameMain extends Component {
             Vec3.squaredDistance(this.#selectedNode.getPosition(), mouseUpNode.getPosition())
                 <= NODE_DIST_MAX * NODE_DIST_MAX)
         {
-            console.log(`Starting transfer ${this.#selectedNode.uuid} -> ${mouseUpNode.uuid}`);
-            let transfer = new Transfer();
-
-            let srcNodeScript = this.#selectedNode.getComponent(NodeScript);
-            transfer.srcNode = this.#selectedNode;
-            transfer.dstNode = mouseUpNode;
-            transfer.sunLeft = srcNodeScript.Sun * 0.6667;
-            transfer.waterLeft = srcNodeScript.Water * 0.6667;
-            transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
-            this.#transfers.push(transfer);
-            //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
-
+            this.ActionStartTransfer(this.#selectedNode, mouseUpNode);
             this.#soundManager.PlayTransfer();
         }
+    }
+
+    private ActionStartTransfer(srcNode: Node, dstNode: Node): void
+    {
+        //console.log(`Starting transfer ${srcNode.uuid} -> ${dstNode.uuid}`);
+        let transfer = new Transfer();
+
+        let srcNodeScript = srcNode.getComponent(NodeScript);
+        transfer.srcNode = srcNode;
+        transfer.dstNode = dstNode;
+        transfer.sunLeft = srcNodeScript.Sun * 0.6667;
+        transfer.waterLeft = srcNodeScript.Water * 0.6667;
+        transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
+        this.#transfers.push(transfer);
+        //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
     }
 
     private CreateNode(isLeft: boolean, pos: Vec3,
