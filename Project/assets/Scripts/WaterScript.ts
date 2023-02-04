@@ -10,6 +10,7 @@ const NODE_MAX_DIST_TO_WATER_FOR_WATER_ROOT = 24;
 export class WaterScript extends Component {
     start() {
         this.node.on(Node.EventType.MOUSE_DOWN, this.OnMouseDown, this);
+        this.node.on(Node.EventType.MOUSE_MOVE, this.OnMouseMove, this);
 
     }
 
@@ -22,6 +23,13 @@ export class WaterScript extends Component {
         let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
         if(!WaterScript.ContainsWater(colliders))
             this.node.parent.parent.getComponent(GameMain).OnGroundMouseDown(e);
+    }
+
+    OnMouseMove(e: EventMouse): void
+    {
+        let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
+        if(!WaterScript.ContainsWater(colliders))
+            this.node.parent.parent.getComponent(GameMain).OnGroundMouseMove(e);
     }
 
     static IsCloseToWater(uiLocation: Vec2): boolean

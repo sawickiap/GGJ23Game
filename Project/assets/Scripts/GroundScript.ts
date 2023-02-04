@@ -9,6 +9,7 @@ const NODE_MAX_DIST_TO_SURFACE_FOR_FLOWER = 24;
 export class GroundScript extends Component {
     start() {
         this.node.on(Node.EventType.MOUSE_DOWN, this.OnMouseDown, this);
+        this.node.on(Node.EventType.MOUSE_MOVE, this.OnMouseMove, this);
 
     }
 
@@ -21,6 +22,13 @@ export class GroundScript extends Component {
         let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
         if(GroundScript.ContainsGround(colliders))
             this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
+    }
+
+    OnMouseMove(e: EventMouse): void
+    {
+        let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
+        if(GroundScript.ContainsGround(colliders))
+            this.node.parent.getComponent(GameMain).OnGroundMouseMove(e);
     }
 
     public static IsCloseToSurface(uiLocation: Vec2): boolean

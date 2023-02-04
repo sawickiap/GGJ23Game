@@ -37,6 +37,10 @@ export class GameMain extends Component {
     #uiBarWaterNode: Node = null;
     #uiBarPoisonNode: Node = null;
 
+    #placingNode: Node = null;
+    #placingFlower: Node = null;
+    #placingWaterRoot: Node = null;
+
     #selectedNode: Node = null;
     #transfers: Transfer[] = [];
 
@@ -59,6 +63,11 @@ export class GameMain extends Component {
         this.#uiBarSunNode = this.MustGetChildByName(this.#uiNode, 'BarSun');
         this.#uiBarWaterNode = this.MustGetChildByName(this.#uiNode, 'BarWater');
         this.#uiBarPoisonNode = this.MustGetChildByName(this.#uiNode, 'BarPoison');
+
+        let placingLayerNode = this.MustGetChildByName(this.node, 'PlacingLayer');
+        this.#placingNode = this.MustGetChildByName(placingLayerNode, 'Node L');
+        this.#placingFlower = this.MustGetChildByName(placingLayerNode, 'Flower L');
+        this.#placingWaterRoot = this.MustGetChildByName(placingLayerNode, 'WaterRoot');
 
         this.GatherExistingNodes();
         this.SelectNode(null);
@@ -304,6 +313,32 @@ export class GameMain extends Component {
         }
     }
 
+    OnGroundMouseMove(e: EventMouse): void
+    {
+        let pos = this.MouseLocationToNodePosition(e.getUILocation());
+        if(this.PlaceGoodForNewNode(true, pos.x, pos.y))
+        {
+            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
+            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+
+            this.#placingNode.setPosition(pos);
+            this.#placingNode.active = true;
+
+            if(isCloseToSurface)
+                this.#placingFlower.setPosition(pos);
+            this.#placingFlower.active = isCloseToSurface;
+            if(isCloseToWater)
+                this.#placingWaterRoot.setPosition(pos);
+            this.#placingWaterRoot.active = isCloseToWater;
+        }
+        else
+        {
+            this.#placingNode.active = false;
+            this.#placingFlower.active = false;
+            this.#placingWaterRoot.active = false;
+        }
+    }
+
     OnGroundMouseDown(e: EventMouse): void
     {
         //console.log('GameMain OnGroundMouseDown');
@@ -353,6 +388,8 @@ export class GameMain extends Component {
                 }
                 else
                     this.#soundManager.PlayNewNode();
+
+                this.#placingNode.active = false;
             }
             else
                 ;//console.log('Not enough sun or water in nearby nodes to create new node.');
