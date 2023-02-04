@@ -4,6 +4,7 @@ import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX } from './Nod
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
 import { WaterScript } from './WaterScript';
+import { SoundManagerScript } from './SoundManagerScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -21,6 +22,7 @@ export class GameMain extends Component {
     @property(Prefab) FlowerRPrefab: Prefab;
     @property(Prefab) WaterRootPrefab: Prefab;
 
+    #soundManager: SoundManagerScript = null;
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
     #linksLayerNode: Node = null;
@@ -35,6 +37,10 @@ export class GameMain extends Component {
     #selectedNode: Node = null;
 
     start() {
+        this.#soundManager = this.MustGetChildByName(this.node.parent,
+            'SoundManager').getComponent(SoundManagerScript);
+        assert(this.#soundManager);
+
         this.#linksLayerNode = this.MustGetChildByName(this.node, 'LinksLayer');
         this.#nodesLayerNode = this.MustGetChildByName(this.node, 'NodesLayer');
 
@@ -123,6 +129,8 @@ export class GameMain extends Component {
             
             if(isCloseToWater)
                 this.CreateWaterRoot(newNode, isLeft);
+
+            this.#soundManager.PlayTest();
         }
     }
 
