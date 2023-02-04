@@ -1,6 +1,6 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
-    Canvas, UITransform, Size, Quat, quat, assert } from 'cc';
-import { NodeScript } from './NodeScript';
+    Canvas, UITransform, Size, Quat, quat, assert, Sprite } from 'cc';
+import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
 import { WaterScript } from './WaterScript';
@@ -24,15 +24,39 @@ export class GameMain extends Component {
     #rightNodes: Node[] = [];
     #linksLayerNode: Node = null;
     #nodesLayerNode: Node = null;
+    #selectionActiveNode : Node = null;
+    #selectionMouseHoverNode : Node = null;
+    #uiNode: Node = null;
+    #uiBarSunNode: Node = null;
+    #uiBarWaterNode: Node = null;
+    #uiBarPoisonNode: Node = null;
+
+    #selectedNode: Node = null;
 
     start() {
-        //console.log('Hello World!');
         this.#linksLayerNode = this.node.getChildByName('LinksLayer');
         assert(this.#linksLayerNode);
         this.#nodesLayerNode = this.node.getChildByName('NodesLayer');
         assert(this.#nodesLayerNode);
 
+        let selectionsLayerNode = this.node.getChildByName('SelectionsLayer');
+        assert(selectionsLayerNode);
+        this.#selectionActiveNode = selectionsLayerNode.getChildByName('SelectionActive');
+        assert(this.#selectionActiveNode);
+        this.#selectionMouseHoverNode = selectionsLayerNode.getChildByName('SelectionMouseHover');
+        assert(this.#selectionMouseHoverNode);
+
+        this.#uiNode = this.node.getChildByName('UI');
+        assert(this.#uiNode);
+        this.#uiBarSunNode = this.#uiNode.getChildByName('BarSun');
+        assert(this.#uiBarSunNode);
+        this.#uiBarWaterNode = this.#uiNode.getChildByName('BarWater');
+        assert(this.#uiBarWaterNode);
+        this.#uiBarPoisonNode = this.#uiNode.getChildByName('BarPoison');
+        assert(this.#uiBarPoisonNode);
+
         this.GatherExistingNodes();
+        this.SelectNode(null);
     }
 
     update(deltaTime: number) {
@@ -90,7 +114,34 @@ export class GameMain extends Component {
         }
     }
 
-    private DestroyNode(nodeToDestroy: Node): void
+    SelectNode(nodeToSelect: Node): void
+    {
+        if(nodeToSelect)
+        {
+            let nodeScript = nodeToSelect.getComponent(NodeScript);
+            assert(nodeScript);
+            let isLeft = nodeScript.IsLeftTeam;
+
+            this.#selectionActiveNode.setPosition(nodeToSelect.getPosition());
+            this.#selectionActiveNode.active = true;
+            
+            this.#uiBarSunNode.getComponent(Sprite).fillRange =
+                nodeScript.Sun / NODE_SUN_MAX;
+            this.#uiBarWaterNode.getComponent(Sprite).fillRange =
+                nodeScript.Water / NODE_WATER_MAX;
+            this.#uiBarPoisonNode.getComponent(Sprite).fillRange =
+                nodeScript.Poison / NODE_POISON_MAX;
+            this.#uiNode.active = true;
+        }
+        else
+        {
+            this.#selectionActiveNode.active = false;
+            this.#uiNode.active = false;
+        }
+        this.#selectedNode = nodeToSelect;
+    }
+
+    DestroyNode(nodeToDestroy: Node): void
     {
         assert(nodeToDestroy);
         let nodeScript = nodeToDestroy.getComponent(NodeScript);
@@ -108,6 +159,10 @@ export class GameMain extends Component {
         }
         for(let linkNode of linkNodesToDestroy)
             linkNode.destroy();
+        
+        // Unselect this node
+        if(this.#selectedNode == nodeToDestroy)
+            this.SelectNode(null);
         
         // Remove this node from node lists
         if(isLeft)
