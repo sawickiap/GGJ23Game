@@ -90,6 +90,35 @@ export class GameMain extends Component {
         }
     }
 
+    private DestroyNode(nodeToDestroy: Node): void
+    {
+        assert(nodeToDestroy);
+        let nodeScript = nodeToDestroy.getComponent(NodeScript);
+        assert(nodeScript);
+        let isLeft = nodeScript.IsLeftTeam;
+
+        // Remove links of this node
+        let linkNodesToDestroy: Node[] = [];
+        for(let linkNode of this.#linksLayerNode.children)
+        {
+            let linkScript = linkNode.getComponent(LinkScript);
+            assert(linkScript);
+            if(nodeToDestroy == linkScript.NodeA || nodeToDestroy == linkScript.NodeB)
+                linkNodesToDestroy.push(linkNode);
+        }
+        for(let linkNode of linkNodesToDestroy)
+            linkNode.destroy();
+        
+        // Remove this node from node lists
+        if(isLeft)
+            this.#leftNodes = this.#leftNodes.filter((n) => n == nodeToDestroy);
+        else
+            this.#rightNodes = this.#rightNodes.filter((n) => n == nodeToDestroy);
+
+        // Destroy the code
+        nodeToDestroy.destroy();
+    }
+
     private CreateNode(isLeft: boolean, pos: Vec3): Node
     {
         let newNode = instantiate(isLeft ? this.NodeLPrefab : this.NodeRPrefab);

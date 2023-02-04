@@ -20,6 +20,10 @@ export class NodeScript extends Component {
     OnMouseDown(e: EventMouse): void
     {
         console.log('NodeScript OnMouseDown');
+        
+        //if(e.getButton() == 1)
+        //    this.node.parent.parent.getComponent(GameMain).DestroyNode(this.node);
+
         //e.propagationStopped = true; // Not needed.
     }
 }
