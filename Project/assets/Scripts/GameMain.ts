@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
-    Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro } from 'cc';
+    Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro, lerp, v2 } from 'cc';
 import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX,
     NEW_NODE_SUN_COST, NEW_NODE_WATER_COST,
     Transfer } from './NodeScript';
@@ -10,6 +10,7 @@ import { SoundManagerScript } from './SoundManagerScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
+const DEG_TO_RAD = Math.PI / 180;
 const NODE_DIST_MIN = 48;
 const NODE_DIST_MAX = 96;
 const LOGIC_UPDATE_INTERVAL = 0.2; // in seconds
@@ -63,6 +64,107 @@ export class GameMain extends Component {
         this.SelectNode(null);
 
         this.schedule(() => this.UpdateLogic(), LOGIC_UPDATE_INTERVAL, macro.REPEAT_FOREVER);
+
+        setTimeout(() => this.UpdateAi(), 1000); // TODO increase to 5000
+    }
+
+    private UpdateAi(): void
+    {
+        let step = this.#rightNodes.length;
+        if(step == 0)
+            return; // Lost, no more nodes, no more moves.
+        if(step == 1)
+            this.AiStepBeginUp();
+        else if(step < 6)
+            this.AiStepBeginDown();
+        else
+            this.AiStepNormal();
+
+        /*
+        let nodesWithSun: Node[] = [];
+        let nodesWithWater: Node[] = [];
+        for(let node of this.#rightNodes)
+        {
+            let nodeScript = node.getComponent(NodeScript);
+            assert(nodeScript && !nodeScript.IsLeftTeam);
+            if(nodeScript.Sun >= NEW_NODE_SUN_COST * 1.2 || nodeScript.HasFlower)
+                nodesWithSun.push(node);
+            if(nodeScript.Water >= NEW_NODE_WATER_COST * 1.2 || nodeScript.HasWaterRoot)
+                nodesWithWater.push(node);
+        }
+        console.log(`Update AI rightNodes=${this.#rightNodes.length}, ` +
+            `nodesWithSun=${nodesWithSun.length}, nodesWithWater=${nodesWithWater.length}`);
+        if(nodesWithSun.length == 1)
+        {
+            let pos = this.AiFindPosForFlower(nodesWithSun);
+        }*/
+
+        let nextStepInMilliseconds = lerp(1000, 5000, Math.random());
+        setTimeout(() => this.UpdateAi(), nextStepInMilliseconds);
+    }
+
+    private AiStepBeginUp(): void
+    {
+        console.log('AI step begin up');
+        let existingPos = this.#rightNodes[0].getPosition();
+        let angle = 150;
+        let newPos = v3(
+            existingPos.x + Math.cos(angle * DEG_TO_RAD) * NODE_DIST_MAX * 0.95,
+            existingPos.y + Math.sin(angle * DEG_TO_RAD) * NODE_DIST_MAX * 0.95, 0);
+        this.ActionPlaceNode(newPos, this.NodePositionToMouseLocation(newPos),
+            false);
+    }
+
+    private AiStepBeginDown(): void
+    {
+        console.log('AI step begin down');
+        
+    }
+
+    private AiStepNormal(): void
+    {
+        console.log('AI step normal');
+        
+    }
+
+    /*
+    private AiFindPosForFlower(nodesWithSun: Node[]): Vec3
+    {
+        for(let node of nodesWithSun)
+        {
+            let nodePos = node.getPosition();
+            let xMin = nodePos.x - NODE_DIST_MAX;
+            let xMax = nodePos.x;
+            let yMin = nodePos.y;
+            let yMax = nodePos.y + NODE_DIST_MAX;
+            for(let iter = 0; iter < 20; ++iter)
+            {
+                let x = lerp(xMin, xMax, Math.random());
+                let y = lerp(xMin, xMax, Math.random());
+                if(this.PlaceGoodForNewNode(false, x, y))
+                {
+                    return v3(x, y, 0);
+                }
+            }
+        }
+        return v3(-1, -1, -1);
+    }*/
+
+    // Checks if place is not too close and not too far from other nodes.
+    // Return nearby nodes to connect with new one, null if failed.
+    private PlaceGoodForNewNode(isLeft: boolean, x: number, y: number): Node[]
+    {
+        let nearbyNodes: Node[] = [];
+        let pos = v3(x, y, 0);
+        for(let node of (isLeft ? this.#leftNodes : this.#rightNodes))
+        {
+            let dist = Vec3.distance(pos, node.getPosition());
+            if(dist < NODE_DIST_MIN)
+                return null; // Too close
+            if(dist <= NODE_DIST_MAX)
+                nearbyNodes.push(node);
+        }
+        return nearbyNodes.length > 0 ? nearbyNodes : null;
     }
 
     private MustGetChildByName(parentNode: Node, childName: string): Node
@@ -136,22 +238,13 @@ export class GameMain extends Component {
 
         let pos = this.MouseLocationToNodePosition(e.getUILocation());
         let isLeft = e.getButton() == 0;
+        this.ActionPlaceNode(pos, e.getUILocation(), isLeft);
+    }
 
-        let tooClose = false;
-        let nearbyNodes: Node[] = [];
-        for(let node of (isLeft ? this.#leftNodes : this.#rightNodes))
-        {
-            let dist = Vec3.distance(pos, node.getPosition());
-            if(dist < NODE_DIST_MIN)
-            {
-                tooClose = true;
-                break;
-            }
-            else if(dist <= NODE_DIST_MAX)
-                nearbyNodes.push(node);
-        }
-        //console.log(`tooClose=${tooClose}, nearbyNodes=${nearbyNodes}`);
-        if(!tooClose && nearbyNodes.length > 0)
+    private ActionPlaceNode(pos: Vec3, uiPos: Vec2, isLeft: boolean): void
+    {
+        let nearbyNodes = this.PlaceGoodForNewNode(isLeft, pos.x, pos.y);
+        if(nearbyNodes)
         {
             let nearbyTotalSun = 0;
             let nearbyTotalWater = 0;
@@ -168,8 +261,8 @@ export class GameMain extends Component {
                 console.log('Enough sun or water in nearby nodes - creating new node.');
                 GameMain.RemoveNewNodeCost(nearbyNodes);
 
-                let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
-                let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+                let isCloseToSurface = GroundScript.IsCloseToSurface(uiPos);
+                let isCloseToWater = WaterScript.IsCloseToWater(uiPos);
 
                 let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
 
@@ -353,6 +446,12 @@ export class GameMain extends Component {
         return v3(v.x - contentSize.width / 2,
             v.y - contentSize.height / 2);
     }
+    private NodePositionToMouseLocation(v: Vec3): Vec2
+    {
+        let contentSize = this.node.getComponent(UITransform).contentSize;
+        return v2(v.x + contentSize.width / 2,
+            v.y + contentSize.height / 2);
+    }
 
     private CreateLink(nodeA: Node, nodeB: Node, isLeft: boolean): void
     {
@@ -370,7 +469,7 @@ export class GameMain extends Component {
         Vec3.divide(midPos, midPos, v3(2, 2, 2));
         linkNode.setPosition(midPos);
 
-        let width = Vec3.len(vecAB) - 16;
+        let width = (Vec3.len(vecAB) - 24) / linkNode.scale.x;
         let height = linkNode.getComponent(UITransform).contentSize.height;
         linkNode.getComponent(UITransform).setContentSize(width, height);
 
