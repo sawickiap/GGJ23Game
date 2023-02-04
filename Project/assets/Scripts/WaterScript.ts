@@ -20,8 +20,8 @@ export class WaterScript extends Component {
     OnMouseDown(e: EventMouse): void
     {
         let colliders = PhysicsSystem2D.instance.testPoint(e.getUILocation());
-        if(WaterScript.ContainsWater(colliders))
-            this.node.parent.getComponent(GameMain).OnGroundMouseDown(e);
+        if(!WaterScript.ContainsWater(colliders))
+            this.node.parent.parent.getComponent(GameMain).OnGroundMouseDown(e);
     }
 
     static IsCloseToWater(uiLocation: Vec2): boolean

@@ -83,6 +83,12 @@ export class GameMain extends Component {
             if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
                 nodeScript.UpdateLooks();
         }
+        for(let node of this.#rightNodes)
+        {
+            let nodeScript = node.getComponent(NodeScript);
+            if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
+                nodeScript.UpdateLooks();
+        }
 
         // Process transfers
         let nodesAffectedByTransfer = new Set<Node>();
@@ -254,9 +260,9 @@ export class GameMain extends Component {
             let srcNodeScript = this.#selectedNode.getComponent(NodeScript);
             transfer.srcNode = this.#selectedNode;
             transfer.dstNode = mouseUpNode;
-            transfer.sunLeft = srcNodeScript.Sun / 2;
-            transfer.waterLeft = srcNodeScript.Water / 2;
-            transfer.poisonLeft = srcNodeScript.Poison / 2;
+            transfer.sunLeft = srcNodeScript.Sun * 0.6667;
+            transfer.waterLeft = srcNodeScript.Water * 0.6667;
+            transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
             this.#transfers.push(transfer);
             //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
         }
