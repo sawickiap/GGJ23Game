@@ -53,7 +53,7 @@ export class NodeScript extends Component {
         this.node.on(Node.EventType.MOUSE_UP, this.OnMouseUp, this);
 
         // Protection against treating node creation as transfer destination.
-        this.schedule(() => this.#mouseUpLocked = false, 0.1);
+        this.schedule(() => this.#mouseUpLocked = false, 0.3);
     }
 
     update(deltaTime: number) {
@@ -103,7 +103,7 @@ export class NodeScript extends Component {
 
     OnMouseUp(e: EventMouse): void
     {
-        //console.log(`NodeScript ${this.node.uuid} OnMouseUp`);
+        console.log(`NodeScript ${this.node.uuid} OnMouseUp`);
 
         if(this.#mouseUpLocked)
             return;
