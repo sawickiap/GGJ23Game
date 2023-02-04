@@ -177,12 +177,17 @@ export class GameMain extends Component {
                     this.CreateLink(nearbyNode, newNode, isLeft);
                 
                 if(isCloseToSurface)
+                {
                     this.CreateFlower(newNode, isLeft);
-                
-                if(isCloseToWater)
+                    this.#soundManager.PlayNewNodeWithFlower();
+                }
+                else if(isCloseToWater)
+                {
                     this.CreateWaterRoot(newNode, isLeft);
-
-                this.#soundManager.PlayTest();
+                    this.#soundManager.PlayNewNodeWithWaterRoot();
+                }
+                else
+                    this.#soundManager.PlayNewNode();
             }
             else
                 console.log('Not enough sun or water in nearby nodes to create new node.');
@@ -219,6 +224,9 @@ export class GameMain extends Component {
     {
         if(nodeToSelect)
         {
+            if(nodeToSelect != this.#selectedNode)
+            this.#soundManager.PlaySelect();
+
             let nodeScript = nodeToSelect.getComponent(NodeScript);
             assert(nodeScript);
             let isLeft = nodeScript.IsLeftTeam;
@@ -286,6 +294,8 @@ export class GameMain extends Component {
 
         // Destroy the code
         nodeToDestroy.destroy();
+
+        this.#soundManager.PlayDestroy();
     }
 
     OnNodeMouseUp(mouseUpNode: Node): void
@@ -310,6 +320,8 @@ export class GameMain extends Component {
             transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
             this.#transfers.push(transfer);
             //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
+
+            this.#soundManager.PlayTransfer();
         }
     }
 

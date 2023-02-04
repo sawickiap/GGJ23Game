@@ -139,8 +139,32 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "Test": {
-      "__uuid__": "a05bc666-ebee-4a44-82b7-290a2ef81446",
+    "NewNode": {
+      "__uuid__": "43619a9c-2f4d-47a3-8952-eb93d4ab28ea",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "NewNodeWithFlower": {
+      "__uuid__": "27a63475-72c7-4f98-aa69-49b342a85f3a",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "NewNodeWithWaterRoot": {
+      "__uuid__": "9fbac864-9b74-4b65-8436-18cd09c81e2f",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "Transfer": {
+      "__uuid__": "c683bfc4-a440-4075-ae38-87927a0b91ce",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "Fight": {
+      "__uuid__": "e1f5e9d6-02fd-4f33-957e-a29d8c104243",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "Destroy": {
+      "__uuid__": "0fb850e1-6f20-411f-8f49-f7e45d629381",
+      "__expectedType__": "cc.AudioClip"
+    },
+    "Select": {
+      "__uuid__": "9a002eb7-f6a2-4453-b9fd-bf67e4f6809d",
       "__expectedType__": "cc.AudioClip"
     },
     "_id": "fbDF8WfThCjbXQ/uvwcDJ9"
