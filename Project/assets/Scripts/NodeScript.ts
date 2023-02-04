@@ -6,6 +6,9 @@ export const NODE_SUN_MAX = 100;
 export const NODE_WATER_MAX = 100;
 export const NODE_POISON_MAX = 100;
 
+export const NEW_NODE_SUN_COST = 30;
+export const NEW_NODE_WATER_COST = 30;
+
 const SUN_TRANSFER_PER_SECOND = 10;
 const WATER_TRANSFER_PER_SECOND = 10;
 const POISON_TRANSFER_PER_SECOND = 10;

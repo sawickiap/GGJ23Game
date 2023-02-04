@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
     Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro } from 'cc';
 import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX,
+    NEW_NODE_SUN_COST, NEW_NODE_WATER_COST,
     Transfer } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
@@ -152,21 +153,65 @@ export class GameMain extends Component {
         //console.log(`tooClose=${tooClose}, nearbyNodes=${nearbyNodes}`);
         if(!tooClose && nearbyNodes.length > 0)
         {
-            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
-            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
-
-            let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
-
+            let nearbyTotalSun = 0;
+            let nearbyTotalWater = 0;
             for(let nearbyNode of nearbyNodes)
-                this.CreateLink(nearbyNode, newNode, isLeft);
-            
-            if(isCloseToSurface)
-                this.CreateFlower(newNode, isLeft);
-            
-            if(isCloseToWater)
-                this.CreateWaterRoot(newNode, isLeft);
+            {
+                let nearbyNodeScript = nearbyNode.getComponent(NodeScript);
+                assert(nearbyNodeScript);
+                nearbyTotalSun += nearbyNodeScript.Sun;
+                nearbyTotalWater += nearbyNodeScript.Water;
+            }
+            if(nearbyTotalSun >= NEW_NODE_SUN_COST &&
+                nearbyTotalWater >= NEW_NODE_WATER_COST)
+            {
+                console.log('Enough sun or water in nearby nodes - creating new node.');
+                GameMain.RemoveNewNodeCost(nearbyNodes);
 
-            this.#soundManager.PlayTest();
+                let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
+                let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+
+                let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
+
+                for(let nearbyNode of nearbyNodes)
+                    this.CreateLink(nearbyNode, newNode, isLeft);
+                
+                if(isCloseToSurface)
+                    this.CreateFlower(newNode, isLeft);
+                
+                if(isCloseToWater)
+                    this.CreateWaterRoot(newNode, isLeft);
+
+                this.#soundManager.PlayTest();
+            }
+            else
+                console.log('Not enough sun or water in nearby nodes to create new node.');
+        }
+    }
+
+    private static RemoveNewNodeCost(nearbyNodes: Node[]): void
+    {
+        let sunToRemoveLeft = NEW_NODE_SUN_COST;
+        let waterToRemoveLeft = NEW_NODE_WATER_COST;
+        for(let i = 0; i < nearbyNodes.length; ++i)
+        {
+            let nodeScript = nearbyNodes[i].getComponent(NodeScript);
+            assert(nodeScript);
+
+            let sunToRemove = Math.min(sunToRemoveLeft, nodeScript.Sun);
+            nodeScript.Sun -= sunToRemove;
+            sunToRemoveLeft -= sunToRemove;
+
+            let waterToRemove = Math.min(waterToRemoveLeft, nodeScript.Water);
+            nodeScript.Water -= waterToRemove;
+            waterToRemoveLeft -= waterToRemove;
+
+            console.log(`RemoveNewNodeCost from node ${nodeScript.node.uuid} sun=${sunToRemove}, water=${waterToRemove}`);
+
+            nodeScript.UpdateLooks();
+
+            if(sunToRemoveLeft <= 0 && waterToRemoveLeft <= 0)
+                break;
         }
     }
 
