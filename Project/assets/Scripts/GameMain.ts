@@ -76,7 +76,11 @@ export class GameMain extends Component {
     private UpdateLogic(): void
     {
         for(let node of this.#leftNodes)
-            node.getComponent(NodeScript).UpdateLogic(LOGIC_UPDATE_INTERVAL);
+        {
+            let nodeScript = node.getComponent(NodeScript);
+            if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
+                nodeScript.UpdateLooks();
+        }
         this.UpdateUiResources();
     }
 
@@ -90,6 +94,7 @@ export class GameMain extends Component {
                 this.#leftNodes.push(childNode);
             else
                 this.#rightNodes.push(childNode);
+            nodeScript.UpdateLooks();
         }
     }
 
@@ -217,6 +222,7 @@ export class GameMain extends Component {
             this.#leftNodes.push(newNode);
         else
             this.#rightNodes.push(newNode);
+        nodeScript.UpdateLooks();
         return newNode;
     }
 
