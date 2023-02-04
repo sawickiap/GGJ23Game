@@ -7,6 +7,7 @@ import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
 import { WaterScript } from './WaterScript';
 import { SoundManagerScript } from './SoundManagerScript';
+import { TransferVisScript } from './TransferVisScript';
 const { ccclass, property } = _decorator;
 
 const RAD_TO_DEG = 180 / Math.PI;
@@ -24,12 +25,14 @@ export class GameMain extends Component {
     @property(Prefab) FlowerLPrefab: Prefab;
     @property(Prefab) FlowerRPrefab: Prefab;
     @property(Prefab) WaterRootPrefab: Prefab;
+    @property(Prefab) TransferVisPrefab: Prefab;
 
     #soundManager: SoundManagerScript = null;
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
     #linksLayerNode: Node = null;
     #nodesLayerNode: Node = null;
+    #transfersLayerNode: Node = null;
     #selectionActiveNode : Node = null;
     #selectionMouseHoverNode : Node = null;
     #uiNode: Node = null;
@@ -51,6 +54,7 @@ export class GameMain extends Component {
 
         this.#linksLayerNode = this.MustGetChildByName(this.node, 'LinksLayer');
         this.#nodesLayerNode = this.MustGetChildByName(this.node, 'NodesLayer');
+        this.#transfersLayerNode = this.MustGetChildByName(this.node, 'TransfersLayer');
 
         let selectionsLayerNode = this.MustGetChildByName(
             this.node, 'SelectionsLayer');
@@ -286,8 +290,20 @@ export class GameMain extends Component {
 
         // Remove finished transfers
         //let transferCountBefore = this.#transfers.length;
-        this.#transfers = this.#transfers.filter((t) =>
+        let filteredTransfers = this.#transfers.filter((t) =>
             t.sunLeft > 0 || t.waterLeft > 0 || t.poisonLeft > 0);
+        // remove transfer vises
+        if(filteredTransfers.length != this.#transfers.length)
+        {
+            for(let t of this.#transfers)
+            {
+                if(filteredTransfers.indexOf(t) == -1)
+                {
+                    t.vis.destroy();
+                }
+            }
+        }
+        this.#transfers = filteredTransfers;
         //let transferCountAfter = this.#transfers.length;
         //if(transferCountAfter != transferCountBefore)
         //    console.log(`Transfers left: ${transferCountAfter}`);
@@ -485,8 +501,20 @@ export class GameMain extends Component {
             this.SelectNode(null);
         
         // Delete transfers affecting this node
-        this.#transfers = this.#transfers.filter((t) =>
+        let filteredTransfers = this.#transfers.filter((t) =>
             t.srcNode != nodeToDestroy && t.dstNode != nodeToDestroy);
+        // remove transfer vises
+        if(filteredTransfers.length != this.#transfers.length)
+        {
+            for(let t of this.#transfers)
+            {
+                if(filteredTransfers.indexOf(t) == -1)
+                {
+                    t.vis.destroy();
+                }
+            }
+        }
+        this.#transfers = filteredTransfers;
         
         // Remove this node from node lists
         if(isLeft)
@@ -527,6 +555,16 @@ export class GameMain extends Component {
         transfer.sunLeft = srcNodeScript.Sun * 0.6667;
         transfer.waterLeft = srcNodeScript.Water * 0.6667;
         transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
+
+        let vis = instantiate(this.TransferVisPrefab);
+        vis.setPosition(srcNode.getPosition());
+        let visScript = vis.getComponent(TransferVisScript);
+        assert(visScript);
+        visScript.Init(
+            transfer.sunLeft > 2, transfer.waterLeft > 2, transfer.poisonLeft > 2);
+        this.#transfersLayerNode.addChild(vis);
+        transfer.vis = vis;
+
         this.#transfers.push(transfer);
         //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
     }

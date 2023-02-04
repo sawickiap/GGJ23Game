@@ -47,8 +47,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 1,
-      "y": 1,
+      "x": 0.5,
+      "y": 0.5,
       "z": 1
     },
     "_mobility": 0,
@@ -74,8 +74,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 32,
-      "height": 128
+      "width": 200,
+      "height": 256
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -115,7 +115,7 @@
     },
     "_type": 2,
     "_fillType": 0,
-    "_sizeMode": 2,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -145,6 +145,7 @@
     },
     "IsLeft": true,
     "IsFlower": true,
+    "IsWaterRoot": false,
     "NodeA": null,
     "NodeB": null,
     "_id": ""
@@ -162,6 +163,7 @@
       "__id__": 0
     },
     "fileId": "2bbo5cb/9MVrvd88HyS9cH",
+    "instance": null,
     "targetOverrides": null
   }
 ]

@@ -24,6 +24,7 @@ export class Transfer
     sunLeft = 0;
     waterLeft = 0;
     poisonLeft = 0;
+    vis: Node = null;
 }
 
 @ccclass('NodeScript')
