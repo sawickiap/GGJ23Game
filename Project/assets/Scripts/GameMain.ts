@@ -1,6 +1,8 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
     Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro } from 'cc';
-import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX } from './NodeScript';
+import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX,
+    NEW_NODE_SUN_COST, NEW_NODE_WATER_COST,
+    Transfer } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
 import { WaterScript } from './WaterScript';
@@ -35,6 +37,7 @@ export class GameMain extends Component {
     #uiBarPoisonNode: Node = null;
 
     #selectedNode: Node = null;
+    #transfers: Transfer[] = [];
 
     start() {
         this.#soundManager = this.MustGetChildByName(this.node.parent,
@@ -81,6 +84,35 @@ export class GameMain extends Component {
             if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
                 nodeScript.UpdateLooks();
         }
+        for(let node of this.#rightNodes)
+        {
+            let nodeScript = node.getComponent(NodeScript);
+            if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
+                nodeScript.UpdateLooks();
+        }
+
+        // Process transfers
+        let nodesAffectedByTransfer = new Set<Node>();
+        for(let transfer of this.#transfers)
+        {
+            transfer.srcNode.getComponent(NodeScript).TransferTo(
+                LOGIC_UPDATE_INTERVAL, transfer);
+            nodesAffectedByTransfer.add(transfer.srcNode);
+            nodesAffectedByTransfer.add(transfer.dstNode);
+        }
+
+        // Remove finished transfers
+        //let transferCountBefore = this.#transfers.length;
+        this.#transfers = this.#transfers.filter((t) =>
+            t.sunLeft > 0 || t.waterLeft > 0 || t.poisonLeft > 0);
+        //let transferCountAfter = this.#transfers.length;
+        //if(transferCountAfter != transferCountBefore)
+        //    console.log(`Transfers left: ${transferCountAfter}`);
+        
+        // Update looks of nodes affected by transfers
+        for(let n of nodesAffectedByTransfer)
+            n.getComponent(NodeScript).UpdateLooks();
+
         this.UpdateUiResources();
     }
 
@@ -121,21 +153,70 @@ export class GameMain extends Component {
         //console.log(`tooClose=${tooClose}, nearbyNodes=${nearbyNodes}`);
         if(!tooClose && nearbyNodes.length > 0)
         {
-            let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
-            let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
-
-            let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
-
+            let nearbyTotalSun = 0;
+            let nearbyTotalWater = 0;
             for(let nearbyNode of nearbyNodes)
-                this.CreateLink(nearbyNode, newNode, isLeft);
-            
-            if(isCloseToSurface)
-                this.CreateFlower(newNode, isLeft);
-            
-            if(isCloseToWater)
-                this.CreateWaterRoot(newNode, isLeft);
+            {
+                let nearbyNodeScript = nearbyNode.getComponent(NodeScript);
+                assert(nearbyNodeScript);
+                nearbyTotalSun += nearbyNodeScript.Sun;
+                nearbyTotalWater += nearbyNodeScript.Water;
+            }
+            if(nearbyTotalSun >= NEW_NODE_SUN_COST &&
+                nearbyTotalWater >= NEW_NODE_WATER_COST)
+            {
+                console.log('Enough sun or water in nearby nodes - creating new node.');
+                GameMain.RemoveNewNodeCost(nearbyNodes);
 
-            this.#soundManager.PlayTest();
+                let isCloseToSurface = GroundScript.IsCloseToSurface(e.getUILocation());
+                let isCloseToWater = WaterScript.IsCloseToWater(e.getUILocation());
+
+                let newNode = this.CreateNode(isLeft, pos, isCloseToSurface, isCloseToWater);
+
+                for(let nearbyNode of nearbyNodes)
+                    this.CreateLink(nearbyNode, newNode, isLeft);
+                
+                if(isCloseToSurface)
+                {
+                    this.CreateFlower(newNode, isLeft);
+                    this.#soundManager.PlayNewNodeWithFlower();
+                }
+                else if(isCloseToWater)
+                {
+                    this.CreateWaterRoot(newNode, isLeft);
+                    this.#soundManager.PlayNewNodeWithWaterRoot();
+                }
+                else
+                    this.#soundManager.PlayNewNode();
+            }
+            else
+                console.log('Not enough sun or water in nearby nodes to create new node.');
+        }
+    }
+
+    private static RemoveNewNodeCost(nearbyNodes: Node[]): void
+    {
+        let sunToRemoveLeft = NEW_NODE_SUN_COST;
+        let waterToRemoveLeft = NEW_NODE_WATER_COST;
+        for(let i = 0; i < nearbyNodes.length; ++i)
+        {
+            let nodeScript = nearbyNodes[i].getComponent(NodeScript);
+            assert(nodeScript);
+
+            let sunToRemove = Math.min(sunToRemoveLeft, nodeScript.Sun);
+            nodeScript.Sun -= sunToRemove;
+            sunToRemoveLeft -= sunToRemove;
+
+            let waterToRemove = Math.min(waterToRemoveLeft, nodeScript.Water);
+            nodeScript.Water -= waterToRemove;
+            waterToRemoveLeft -= waterToRemove;
+
+            console.log(`RemoveNewNodeCost from node ${nodeScript.node.uuid} sun=${sunToRemove}, water=${waterToRemove}`);
+
+            nodeScript.UpdateLooks();
+
+            if(sunToRemoveLeft <= 0 && waterToRemoveLeft <= 0)
+                break;
         }
     }
 
@@ -143,6 +224,9 @@ export class GameMain extends Component {
     {
         if(nodeToSelect)
         {
+            if(nodeToSelect != this.#selectedNode)
+            this.#soundManager.PlaySelect();
+
             let nodeScript = nodeToSelect.getComponent(NodeScript);
             assert(nodeScript);
             let isLeft = nodeScript.IsLeftTeam;
@@ -198,6 +282,10 @@ export class GameMain extends Component {
         if(this.#selectedNode == nodeToDestroy)
             this.SelectNode(null);
         
+        // Delete transfers affecting this node
+        this.#transfers = this.#transfers.filter((t) =>
+            t.srcNode != nodeToDestroy && t.dstNode != nodeToDestroy);
+        
         // Remove this node from node lists
         if(isLeft)
             this.#leftNodes = this.#leftNodes.filter((n) => n == nodeToDestroy);
@@ -206,6 +294,35 @@ export class GameMain extends Component {
 
         // Destroy the code
         nodeToDestroy.destroy();
+
+        this.#soundManager.PlayDestroy();
+    }
+
+    OnNodeMouseUp(mouseUpNode: Node): void
+    {
+        let nodeScript = mouseUpNode.getComponent(NodeScript);
+        assert(nodeScript);
+        if(this.#selectedNode &&
+            mouseUpNode != this.#selectedNode &&
+            this.#selectedNode.getComponent(NodeScript).IsLeftTeam && // Should be obvious
+            nodeScript.IsLeftTeam &&
+            Vec3.squaredDistance(this.#selectedNode.getPosition(), mouseUpNode.getPosition())
+                <= NODE_DIST_MAX * NODE_DIST_MAX)
+        {
+            console.log(`Starting transfer ${this.#selectedNode.uuid} -> ${mouseUpNode.uuid}`);
+            let transfer = new Transfer();
+
+            let srcNodeScript = this.#selectedNode.getComponent(NodeScript);
+            transfer.srcNode = this.#selectedNode;
+            transfer.dstNode = mouseUpNode;
+            transfer.sunLeft = srcNodeScript.Sun * 0.6667;
+            transfer.waterLeft = srcNodeScript.Water * 0.6667;
+            transfer.poisonLeft = srcNodeScript.Poison * 0.6667;
+            this.#transfers.push(transfer);
+            //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
+
+            this.#soundManager.PlayTransfer();
+        }
     }
 
     private CreateNode(isLeft: boolean, pos: Vec3,
