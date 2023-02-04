@@ -6,8 +6,21 @@ export const NODE_SUN_MAX = 100;
 export const NODE_WATER_MAX = 100;
 export const NODE_POISON_MAX = 100;
 
-const SUN_GATHER_PER_SECOND = 1;
-const WATER_GATHER_PER_SECOND = 1;
+const SUN_TRANSFER_PER_SECOND = 10;
+const WATER_TRANSFER_PER_SECOND = 10;
+const POISON_TRANSFER_PER_SECOND = 10;
+
+const SUN_GATHER_PER_SECOND = 10;
+const WATER_GATHER_PER_SECOND = 10;
+
+export class Transfer
+{
+    srcNode: Node = null;
+    dstNode: Node = null;
+    sunLeft = 0;
+    waterLeft = 0;
+    poisonLeft = 0;
+}
 
 @ccclass('NodeScript')
 export class NodeScript extends Component {
@@ -21,6 +34,7 @@ export class NodeScript extends Component {
 
     #gameMain: GameMain = null;
     #overlaySprite: SpriteComponent = null;
+    #mouseUpLocked: boolean = true;
 
     onLoad(): void
     {
@@ -33,6 +47,10 @@ export class NodeScript extends Component {
     start()
     {
         this.node.on(Node.EventType.MOUSE_DOWN, this.OnMouseDown, this);
+        this.node.on(Node.EventType.MOUSE_UP, this.OnMouseUp, this);
+
+        // Protection against treating node creation as transfer destination.
+        this.schedule(() => this.#mouseUpLocked = false, 0.1);
     }
 
     update(deltaTime: number) {
@@ -59,7 +77,7 @@ export class NodeScript extends Component {
         let sunPercent = this.Sun / NODE_SUN_MAX;
         let waterPercent = this.Water / NODE_WATER_MAX;
         
-        let scale = lerp(0.9, 2, waterPercent);
+        let scale = lerp(1.5, 2.5, waterPercent);
         let overlayAlpha = sunPercent * 255;
 
         this.node.setScale(v3(scale, scale, scale));
@@ -68,7 +86,7 @@ export class NodeScript extends Component {
 
     OnMouseDown(e: EventMouse): void
     {
-        //console.log('NodeScript OnMouseDown');
+        //console.log(`NodeScript ${this.node.uuid} OnMouseDown`);
 
         if(e.getButton() == 0)
             // TODO only left team
@@ -78,5 +96,44 @@ export class NodeScript extends Component {
         //    this.#gameMain.DestroyNode(this.node);
 
         //e.propagationStopped = true; // Not needed.
+    }
+
+    OnMouseUp(e: EventMouse): void
+    {
+        //console.log(`NodeScript ${this.node.uuid} OnMouseUp`);
+
+        if(this.#mouseUpLocked)
+            return;
+
+        if(e.getButton() == 0)
+            this.#gameMain.OnNodeMouseUp(this.node);
+    }
+
+    TransferTo(dt: number, transfer: Transfer): void
+    {
+        assert(transfer.srcNode == this.node);
+        let dstNodeScript = transfer.dstNode.getComponent(NodeScript);
+        assert(dstNodeScript);
+
+        let sunToTransfer = Math.min(transfer.sunLeft, SUN_TRANSFER_PER_SECOND * dt);
+        transfer.sunLeft -= sunToTransfer;
+        sunToTransfer = Math.min(sunToTransfer,
+            this.Sun, NODE_SUN_MAX - dstNodeScript.Sun);
+        this.Sun -= sunToTransfer;
+        dstNodeScript.Sun += sunToTransfer;
+
+        let waterToTransfer = Math.min(transfer.waterLeft, WATER_TRANSFER_PER_SECOND * dt);
+        transfer.waterLeft -= waterToTransfer;
+        waterToTransfer = Math.min(waterToTransfer,
+            this.Water, NODE_WATER_MAX - dstNodeScript.Water);
+        this.Water -= waterToTransfer;
+        dstNodeScript.Water += waterToTransfer;
+
+        let poisonToTransfer = Math.min(transfer.poisonLeft, POISON_TRANSFER_PER_SECOND * dt);
+        transfer.poisonLeft -= poisonToTransfer;
+        poisonToTransfer = Math.min(poisonToTransfer,
+            this.Poison, NODE_POISON_MAX - dstNodeScript.Poison);
+        this.Poison -= poisonToTransfer;
+        dstNodeScript.Poison += poisonToTransfer;
     }
 }

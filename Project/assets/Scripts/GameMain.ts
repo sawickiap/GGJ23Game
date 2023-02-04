@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, EventMouse, Prefab, instantiate, Vec3, Vec2, v3,
     Canvas, UITransform, Size, Quat, quat, assert, Sprite, macro } from 'cc';
-import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX } from './NodeScript';
+import { NodeScript, NODE_SUN_MAX, NODE_WATER_MAX, NODE_POISON_MAX,
+    Transfer } from './NodeScript';
 import { LinkScript } from './LinkScript';
 import { GroundScript } from './GroundScript';
 import { WaterScript } from './WaterScript';
@@ -35,6 +36,7 @@ export class GameMain extends Component {
     #uiBarPoisonNode: Node = null;
 
     #selectedNode: Node = null;
+    #transfers: Transfer[] = [];
 
     start() {
         this.#soundManager = this.MustGetChildByName(this.node.parent,
@@ -81,6 +83,29 @@ export class GameMain extends Component {
             if(nodeScript.UpdateLogic(LOGIC_UPDATE_INTERVAL))
                 nodeScript.UpdateLooks();
         }
+
+        // Process transfers
+        let nodesAffectedByTransfer = new Set<Node>();
+        for(let transfer of this.#transfers)
+        {
+            transfer.srcNode.getComponent(NodeScript).TransferTo(
+                LOGIC_UPDATE_INTERVAL, transfer);
+            nodesAffectedByTransfer.add(transfer.srcNode);
+            nodesAffectedByTransfer.add(transfer.dstNode);
+        }
+
+        // Remove finished transfers
+        //let transferCountBefore = this.#transfers.length;
+        this.#transfers = this.#transfers.filter((t) =>
+            t.sunLeft > 0 || t.waterLeft > 0 || t.poisonLeft > 0);
+        //let transferCountAfter = this.#transfers.length;
+        //if(transferCountAfter != transferCountBefore)
+        //    console.log(`Transfers left: ${transferCountAfter}`);
+        
+        // Update looks of nodes affected by transfers
+        for(let n of nodesAffectedByTransfer)
+            n.getComponent(NodeScript).UpdateLooks();
+
         this.UpdateUiResources();
     }
 
@@ -198,6 +223,10 @@ export class GameMain extends Component {
         if(this.#selectedNode == nodeToDestroy)
             this.SelectNode(null);
         
+        // Delete transfers affecting this node
+        this.#transfers = this.#transfers.filter((t) =>
+            t.srcNode != nodeToDestroy && t.dstNode != nodeToDestroy);
+        
         // Remove this node from node lists
         if(isLeft)
             this.#leftNodes = this.#leftNodes.filter((n) => n == nodeToDestroy);
@@ -206,6 +235,31 @@ export class GameMain extends Component {
 
         // Destroy the code
         nodeToDestroy.destroy();
+    }
+
+    OnNodeMouseUp(mouseUpNode: Node): void
+    {
+        let nodeScript = mouseUpNode.getComponent(NodeScript);
+        assert(nodeScript);
+        if(this.#selectedNode &&
+            mouseUpNode != this.#selectedNode &&
+            this.#selectedNode.getComponent(NodeScript).IsLeftTeam && // Should be obvious
+            nodeScript.IsLeftTeam &&
+            Vec3.squaredDistance(this.#selectedNode.getPosition(), mouseUpNode.getPosition())
+                <= NODE_DIST_MAX * NODE_DIST_MAX)
+        {
+            console.log(`Starting transfer ${this.#selectedNode.uuid} -> ${mouseUpNode.uuid}`);
+            let transfer = new Transfer();
+
+            let srcNodeScript = this.#selectedNode.getComponent(NodeScript);
+            transfer.srcNode = this.#selectedNode;
+            transfer.dstNode = mouseUpNode;
+            transfer.sunLeft = srcNodeScript.Sun / 2;
+            transfer.waterLeft = srcNodeScript.Water / 2;
+            transfer.poisonLeft = srcNodeScript.Poison / 2;
+            this.#transfers.push(transfer);
+            //console.log(`Starting transfer: sun=${transfer.sunLeft}`);
+        }
     }
 
     private CreateNode(isLeft: boolean, pos: Vec3,
