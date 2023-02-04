@@ -216,7 +216,11 @@ export class GameMain extends Component {
         nodeScript.IsLeftTeam = isLeft;
         nodeScript.HasFlower = hasFlower;
         nodeScript.HasWaterRoot = hasWaterRoot;
-        newNode.setPosition(pos); 
+        newNode.setPosition(pos);
+
+        let rotation = quat(); Quat.fromAngleZ(rotation, Math.random() * 360);
+        newNode.setRotation(rotation);
+        
         this.#nodesLayerNode.addChild(newNode);
         if(isLeft)
             this.#leftNodes.push(newNode);
