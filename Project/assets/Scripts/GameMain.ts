@@ -34,29 +34,30 @@ export class GameMain extends Component {
     #selectedNode: Node = null;
 
     start() {
-        this.#linksLayerNode = this.node.getChildByName('LinksLayer');
-        assert(this.#linksLayerNode);
-        this.#nodesLayerNode = this.node.getChildByName('NodesLayer');
-        assert(this.#nodesLayerNode);
+        this.#linksLayerNode = this.MustGetChildByName(this.node, 'LinksLayer');
+        this.#nodesLayerNode = this.MustGetChildByName(this.node, 'NodesLayer');
 
-        let selectionsLayerNode = this.node.getChildByName('SelectionsLayer');
-        assert(selectionsLayerNode);
-        this.#selectionActiveNode = selectionsLayerNode.getChildByName('SelectionActive');
-        assert(this.#selectionActiveNode);
-        this.#selectionMouseHoverNode = selectionsLayerNode.getChildByName('SelectionMouseHover');
-        assert(this.#selectionMouseHoverNode);
+        let selectionsLayerNode = this.MustGetChildByName(
+            this.node, 'SelectionsLayer');
+        this.#selectionActiveNode = this.MustGetChildByName(
+            selectionsLayerNode, 'SelectionActive');
+        this.#selectionMouseHoverNode = this.MustGetChildByName(
+            selectionsLayerNode, 'SelectionMouseHover');
 
-        this.#uiNode = this.node.getChildByName('UI');
-        assert(this.#uiNode);
-        this.#uiBarSunNode = this.#uiNode.getChildByName('BarSun');
-        assert(this.#uiBarSunNode);
-        this.#uiBarWaterNode = this.#uiNode.getChildByName('BarWater');
-        assert(this.#uiBarWaterNode);
-        this.#uiBarPoisonNode = this.#uiNode.getChildByName('BarPoison');
-        assert(this.#uiBarPoisonNode);
+        this.#uiNode = this.MustGetChildByName(this.node, 'UI');
+        this.#uiBarSunNode = this.MustGetChildByName(this.#uiNode, 'BarSun');
+        this.#uiBarWaterNode = this.MustGetChildByName(this.#uiNode, 'BarWater');
+        this.#uiBarPoisonNode = this.MustGetChildByName(this.#uiNode, 'BarPoison');
 
         this.GatherExistingNodes();
         this.SelectNode(null);
+    }
+
+    private MustGetChildByName(parentNode: Node, childName: string): Node
+    {
+        let result = parentNode.getChildByName(childName);
+        assert(result);
+        return result;
     }
 
     update(deltaTime: number) {
