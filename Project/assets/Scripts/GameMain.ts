@@ -353,6 +353,7 @@ export class GameMain extends Component {
             this.#placingFlower.active = false;
             this.#placingWaterRoot.active = false;
         }
+        this.#selectionMouseHoverNode.active = false;
     }
 
     OnGroundMouseDown(e: EventMouse): void
@@ -451,6 +452,7 @@ export class GameMain extends Component {
 
             this.#selectionActiveNode.setPosition(nodeToSelect.getPosition());
             this.#selectionActiveNode.active = true;
+            this.#selectionMouseHoverNode.active = false;
             this.#uiNode.active = true;
         }
         else
@@ -541,6 +543,18 @@ export class GameMain extends Component {
         {
             this.ActionStartTransfer(this.#selectedNode, mouseUpNode);
             this.#soundManager.PlayTransfer();
+        }
+    }
+
+    OnNodeMouseMove(n: Node): void
+    {
+        let nodeScript = n.getComponent(NodeScript);
+        assert(nodeScript);
+        if(nodeScript.IsLeftTeam &&
+            n != this.#selectedNode)
+        {
+            this.#selectionMouseHoverNode.setPosition(n.getPosition());
+            this.#selectionMouseHoverNode.active = true;
         }
     }
 

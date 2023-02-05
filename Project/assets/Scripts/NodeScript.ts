@@ -53,6 +53,7 @@ export class NodeScript extends Component {
     {
         this.node.on(Node.EventType.MOUSE_DOWN, this.OnMouseDown, this);
         this.node.on(Node.EventType.MOUSE_UP, this.OnMouseUp, this);
+        this.node.on(Node.EventType.MOUSE_MOVE, this.OnMouseMove, this);
 
         // Protection against treating node creation as transfer destination.
         this.schedule(() => this.#mouseUpLocked = false, 0.3);
@@ -122,13 +123,19 @@ export class NodeScript extends Component {
 
     OnMouseUp(e: EventMouse): void
     {
-        console.log(`NodeScript ${this.node.uuid} OnMouseUp`);
+        //console.log(`NodeScript ${this.node.uuid} OnMouseUp`);
 
         if(this.#mouseUpLocked)
             return;
 
         if(e.getButton() == 0)
             this.#gameMain.OnNodeMouseUp(this.node);
+    }
+
+    OnMouseMove(e: EventMouse): void
+    {
+        //console.log(`NodeScript ${this.node.uuid} OnMouseMove`);
+        this.#gameMain.OnNodeMouseMove(this.node);
     }
 
     TransferTo(dt: number, transfer: Transfer): void
