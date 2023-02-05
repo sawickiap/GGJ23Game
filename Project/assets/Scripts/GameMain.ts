@@ -450,8 +450,7 @@ export class GameMain extends Component {
             assert(nodeScript);
             let isLeft = nodeScript.IsLeftTeam;
 
-            this.#selectionActiveNode.setPosition(nodeToSelect.getPosition());
-            this.#selectionActiveNode.active = true;
+            this.ShowNodeSelection(nodeToSelect);
             this.#selectionMouseHoverNode.active = false;
             this.#uiNode.active = true;
         }
@@ -462,6 +461,26 @@ export class GameMain extends Component {
         }
         this.#selectedNode = nodeToSelect;
         this.UpdateUiResources();
+    }
+
+    private ShowNodeSelection(n: Node): void
+    {
+        let nContentSize = n.getComponent(UITransform).contentSize;
+        this.#selectionActiveNode.setPosition(n.getPosition());
+        this.#selectionActiveNode.getComponent(UITransform).setContentSize(
+            n.getScale().x * nContentSize.width,
+            n.getScale().y * nContentSize.height);
+        this.#selectionActiveNode.active = true;
+    }
+
+    private ShowNodeMouseHover(n: Node): void
+    {
+        let nContentSize = n.getComponent(UITransform).contentSize;
+        this.#selectionMouseHoverNode.setPosition(n.getPosition());
+        this.#selectionMouseHoverNode.getComponent(UITransform).setContentSize(
+            n.getScale().x * nContentSize.width * 0.9,
+            n.getScale().y * nContentSize.height * 0.9);
+        this.#selectionMouseHoverNode.active = true;
     }
 
     UpdateUiResources(): void
@@ -553,8 +572,7 @@ export class GameMain extends Component {
         if(nodeScript.IsLeftTeam &&
             n != this.#selectedNode)
         {
-            this.#selectionMouseHoverNode.setPosition(n.getPosition());
-            this.#selectionMouseHoverNode.active = true;
+            this.ShowNodeMouseHover(n);
         }
     }
 
