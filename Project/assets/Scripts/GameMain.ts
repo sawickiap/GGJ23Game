@@ -26,12 +26,14 @@ export class GameMain extends Component {
     @property(Prefab) FlowerRPrefab: Prefab;
     @property(Prefab) WaterRootPrefab: Prefab;
     @property(Prefab) TransferVisPrefab: Prefab;
+    @property(Prefab) NewNodeParticlesPrefab: Prefab;
 
     #soundManager: SoundManagerScript = null;
     #leftNodes: Node[] = [];
     #rightNodes: Node[] = [];
     #linksLayerNode: Node = null;
     #nodesLayerNode: Node = null;
+    #particlesLayerNode: Node = null;
     #transfersLayerNode: Node = null;
     #selectionActiveNode : Node = null;
     #selectionMouseHoverNode : Node = null;
@@ -54,6 +56,7 @@ export class GameMain extends Component {
 
         this.#linksLayerNode = this.MustGetChildByName(this.node, 'LinksLayer');
         this.#nodesLayerNode = this.MustGetChildByName(this.node, 'NodesLayer');
+        this.#particlesLayerNode = this.MustGetChildByName(this.node, 'ParticlesLayer');
         this.#transfersLayerNode = this.MustGetChildByName(this.node, 'TransfersLayer');
 
         let selectionsLayerNode = this.MustGetChildByName(
@@ -78,7 +81,7 @@ export class GameMain extends Component {
 
         this.schedule(() => this.UpdateLogic(), LOGIC_UPDATE_INTERVAL, macro.REPEAT_FOREVER);
 
-        setTimeout(() => this.UpdateAi(), 1000); // TODO increase to 5000
+        setTimeout(() => this.UpdateAi(), 5000);
     }
 
     private UpdateAi(): void
@@ -407,6 +410,10 @@ export class GameMain extends Component {
                     this.#soundManager.PlayNewNode();
 
                 this.#placingNode.active = false;
+
+                let particlesNode = instantiate(this.NewNodeParticlesPrefab);
+                particlesNode.setPosition(pos);
+                this.#particlesLayerNode.addChild(particlesNode);
             }
             else
                 ;//console.log('Not enough sun or water in nearby nodes to create new node.');
